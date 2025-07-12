@@ -1,0 +1,49 @@
+local.file_match "static_logs" {
+	path_targets = [{
+		__address__ = "loki",
+		__path__    = "/var/log/app_logs/*.log",
+		job         = "vault-logs",
+	}]
+}
+
+loki.process "static_logs" {
+	forward_to = [loki.write.default.receiver]
+
+	stage.regex {
+		expression = "^([A-Z][a-z]{2} +\\d{1,2} \\d{2}:\\d{2}:\\d{2}) (?P<host>[^ ]+) (?P<process>[^\\s\\[]+)(?:\\[[^\\]]+\\])?: (?P<ts>\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}-\\d{4}) \\[(?P<level>[A-Z]+)\\]\\s+(?P<subsystem>[a-zA-Z0-9_.]+):"
+	}
+
+	stage.timestamp {
+		source   = "ts"
+		format   = "2006-01-02T15:04:05.000-0700"
+		location = "Local"
+	}
+
+	stage.labels {
+		values = {
+			host      = null,
+			level     = null,
+			process   = null,
+			subsystem = null,
+		}
+	}
+}
+
+loki.source.file "static_logs" {
+	targets               = local.file_match.static_logs.targets
+	forward_to            = [loki.process.static_logs.receiver]
+	legacy_positions_file = "/tmp/positions.yaml"
+}
+
+loki.write "default" {
+	endpoint {
+		url = "http://loki:3100/loki/api/v1/push"
+	}
+	external_labels = {}
+}
+
+// When this is working, you should see logs like this:
+// ts=2025-07-11T17:47:48.37741Z level=info msg="tail routine: started" component_path=/ component_id=loki.source.file.static_logs component=tailer path=/Users/arightious/support/tickets/logs/186560us04dv1vvlt02-2025-06-12T15-53-44Z-vault.log
+// ts=2025-07-11T17:47:48.377413Z level=info msg="tail routine: started" component_path=/ component_id=loki.source.file.static_logs component=tailer path=/Users/arightious/support/tickets/logs/186560us03dv1vvlt02-2025-06-12T14-36-20Z-vault.log
+// ts=2025-07-11T17:47:48.377442Z level=info msg="Seeked /Users/arightious/support/tickets/logs/186560us04dv1vvlt02-2025-06-12T15-53-44Z-vault.log - &{Offset:0 Whence:0}" component_path=/ component_id=loki.source.file.static_logs component=tailer
+// ts=2025-07-11T17:47:48.377448Z level=info msg="Seeked /Users/arightious/support/tickets/logs/186560us03dv1vvlt02-2025-06-12T14-36-20Z-vault.log - &{Offset:0 Whence:0}" component_path=/ component_id=loki.source.file.static_logs component=tailer

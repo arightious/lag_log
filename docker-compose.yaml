@@ -1,0 +1,56 @@
+# Define named volumes for persistent data storage
+volumes:
+  loki_data: {}
+  grafana_data: {}
+  alloy_positions: {}
+
+# Define the network for inter-service communication
+networks:
+  monitoring:
+
+services:
+  # Grafana Service for querying and visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000" # Expose Grafana UI on port 3000
+    volumes:
+      - grafana_data:/var/lib/grafana # Persist Grafana dashboards and settings
+      - ./provisioning:/etc/grafana/provisioning # Auto-provision the Loki datasource
+    restart: unless-stopped
+    networks:
+      - monitoring
+
+  # Loki Service for log aggregation and storage
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    ports:
+      - "3100:3100" # Expose Loki API on port 3100
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./loki-config.yaml:/etc/loki/local-config.yaml # Mount the Loki configuration file
+      - loki_data:/loki # Persist Loki's index and chunks
+    restart: unless-stopped
+    networks:
+      - monitoring
+
+  # Alloy Service for log collection and forwarding
+  alloy:
+    image: grafana/alloy:latest
+    container_name: alloy
+    # Modified command to start the Alloy UI server
+    command: run --server.http.listen-addr=0.0.0.0:12345 /etc/alloy/config.alloy
+    ports:
+      # Expose the Alloy UI port to the host machine
+      - "12345:12345"
+    volumes:
+      - ./config.alloy:/etc/alloy/config.alloy # Mount the Alloy configuration file
+      - ./logs:/var/log/app_logs # Mount the host directory containing your logs
+      #- alloy_positions:/tmp # Persist the file positions to avoid re-reading logs
+    restart: unless-stopped
+    depends_on:
+      - loki
+    networks:
+      - monitoring

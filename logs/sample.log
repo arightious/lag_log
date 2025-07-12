@@ -1,0 +1,4 @@
+Jul 01 06:25:05 vaultdev02 vault[1337]: 2025-05-20T06:25:05.217-0700 [INFO]  expiration: revoked lease: lease_id=auth/kubernetes_ops/login/h0392354158c45a0ec704c77176afb411b492affb852bede025ae86949ab17fb8
+Jul 01 06:25:07 vaultdev02 vault[1337]: 2025-05-20T06:25:07.227-0700 [ERROR] secrets.database.database_79f5bb4f: unable to rotate credentials in periodic function: database=db-001 role=db-001 error="error setting credentials: lookup db-001.usa.bogus.corp on 165.251.162.251:53: no such host"
+Jul 02 21:00:30 vaultdev01 vault[1131]: 2025-06-02T21:00:30.538-0400 [ERROR] replication.index.perf: failed to persist checkpoint: error="failed to persist: Failed request: rpc error getting client: failed to get conn: dial tcp <nil>->10.38.30.32:8300: connect: connection refused"
+Jul 02 10:09:30 vaultdev01 vault[1131]: 2025-06-12T10:09:30.496-0400 [WARN]  core.cluster-listener: no TLS config found for ALPN: ALPN=[]
